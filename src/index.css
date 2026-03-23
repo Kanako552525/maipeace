@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI', sans-serif;
+  background-color: #f5f6fa;
+  overscroll-behavior: none;
+}
+
+#root {
+  min-height: 100svh;
+  max-width: 430px;
+  margin: 0 auto;
+  background: #f5f6fa;
+}
