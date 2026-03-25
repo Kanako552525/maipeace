@@ -51,6 +51,9 @@ export interface AppData {
   moodRecords: MoodRecord[];
   impulseCount: number; // 今月我慢した回数
   lastImpulseMonth: string; // YYYY-MM
+  loginPoints: number; // 累計ログインポイント
+  lastLoginDate: string; // 最後にポイントを獲得した日 YYYY-MM-DD
+  loginStreak: number; // 連続ログイン日数
 }
 
 // ── デフォルト値 ────────────────────────────────
@@ -62,6 +65,9 @@ const defaultData: AppData = {
   moodRecords: [],
   impulseCount: 0,
   lastImpulseMonth: '',
+  loginPoints: 0,
+  lastLoginDate: '',
+  loginStreak: 0,
 };
 
 // ── localStorage ユーティリティ ─────────────────
@@ -201,6 +207,31 @@ export function useStore() {
     });
   };
 
+  // ── ログインポイント ──
+  const checkLoginBonus = () => {
+    const todayStr = today();
+    if (data.lastLoginDate === todayStr) return false; // 今日すでに取得済み
+
+    // 昨日ログインしていたか確認（連続ログイン判定）
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+    const isStreak = data.lastLoginDate === yesterdayStr;
+
+    const newStreak = isStreak ? data.loginStreak + 1 : 1;
+    // 7日連続なら3pt、3日連続なら2pt、それ以外は1pt
+    const bonus = newStreak % 7 === 0 ? 3 : newStreak % 3 === 0 ? 2 : 1;
+
+    update({
+      loginPoints: data.loginPoints + bonus,
+      lastLoginDate: todayStr,
+      loginStreak: newStreak,
+    });
+    return bonus;
+  };
+
+  const todayBonusReceived = data.lastLoginDate === today();
+
   // 我慢カウント
   const addImpulseResist = () => {
     const month = toYYYYMM();
@@ -244,5 +275,8 @@ export function useStore() {
     addImpulseResist,
     // 気分
     saveMoodRecord,
+    // ポイント
+    checkLoginBonus,
+    todayBonusReceived,
   };
 }

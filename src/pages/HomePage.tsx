@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import { useAppStore } from '../App';
-import { CheckCircle2, Circle, Pill } from 'lucide-react';
+import { CheckCircle2, Circle, Pill, Gift, Flame, AlertCircle } from 'lucide-react';
 
 const MESSAGES = [
   'おはよう！今日もじぶんのペースで💙',
@@ -23,7 +24,24 @@ function todayMessage() {
 }
 
 export default function HomePage() {
-  const { todayTasks, toggleTask, todayMedications, toggleMedication } = useAppStore();
+  const {
+    todayTasks, toggleTask,
+    todayMedications, toggleMedication,
+    data, checkLoginBonus, todayBonusReceived,
+  } = useAppStore();
+
+  const [bonusPopup, setBonusPopup] = useState<number | false>(false);
+
+  // ログインボーナス判定（初回表示時）
+  useEffect(() => {
+    if (!todayBonusReceived) {
+      const bonus = checkLoginBonus();
+      if (bonus) {
+        setBonusPopup(bonus);
+        setTimeout(() => setBonusPopup(false), 3000);
+      }
+    }
+  }, []);
 
   const doneTasks = todayTasks.filter((t) => t.done).length;
   const totalTasks = todayTasks.length;
@@ -31,10 +49,63 @@ export default function HomePage() {
 
   return (
     <div className="px-4 pt-8 pb-4">
+
+      {/* ログインボーナスポップアップ */}
+      {bonusPopup !== false && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-yellow-400 text-white px-5 py-3 rounded-2xl shadow-lg flex items-center gap-2 animate-bounce">
+          <Gift size={20} />
+          <span className="font-bold text-sm">ログインボーナス +{bonusPopup}pt 獲得！</span>
+        </div>
+      )}
+
       {/* あいさつ */}
-      <div className="mb-6">
+      <div className="mb-4">
         <h1 className="text-2xl font-bold text-gray-700">{todayGreeting()}</h1>
         <p className="text-gray-400 text-sm mt-1">{todayMessage()}</p>
+      </div>
+
+      {/* ポイントカード */}
+      <div className="bg-gradient-to-r from-yellow-400 to-amber-400 rounded-2xl p-4 mb-4 shadow-sm text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium opacity-80 mb-0.5">累計ポイント</p>
+            <div className="flex items-end gap-1">
+              <span className="text-3xl font-bold">{data.loginPoints}</span>
+              <span className="text-sm mb-0.5 opacity-90">pt</span>
+            </div>
+          </div>
+          <div className="text-right">
+            <Gift size={32} className="opacity-80 ml-auto mb-1" />
+            {data.loginStreak > 1 && (
+              <div className="flex items-center gap-1 justify-end">
+                <Flame size={13} className="opacity-90" />
+                <span className="text-xs font-medium opacity-90">{data.loginStreak}日連続！</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-3 pt-3 border-t border-white/20 flex items-start gap-1.5">
+          <div>
+            <p className="text-[10px] opacity-75 leading-relaxed">
+              毎日ログインで1pt獲得。3日連続で2pt、7日連続で3pt！
+            </p>
+            {todayBonusReceived
+              ? <p className="text-[10px] opacity-90 font-medium mt-0.5">✓ 今日のボーナス受取済み</p>
+              : <p className="text-[10px] opacity-90 font-medium mt-0.5">今日のボーナスをもらったよ！</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      {/* ⚠️ データ保存の注意書き */}
+      <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 mb-4 flex items-start gap-2">
+        <AlertCircle size={15} className="text-amber-400 shrink-0 mt-0.5" />
+        <p className="text-[11px] text-amber-600 leading-relaxed">
+          ポイントはこのデバイスのブラウザに保存されています。
+          ブラウザのキャッシュ・履歴を削除するとポイントが消える場合があります。
+          アカウント機能は今後追加予定です。
+        </p>
       </div>
 
       {/* 今日のお薬 */}
