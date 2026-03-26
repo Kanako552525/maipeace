@@ -1,10 +1,11 @@
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import { Home, CheckSquare, Wallet, Pill, BookHeart } from 'lucide-react';
+import { Home, CheckSquare, Wallet, Pill, BookHeart, Star } from 'lucide-react';
 import HomePage from './pages/HomePage';
 import TaskPage from './pages/TaskPage';
 import MoneyPage from './pages/MoneyPage';
 import MedPage from './pages/MedPage';
 import RecordPage from './pages/RecordPage';
+import ReviewPage from './pages/ReviewPage';
 import { useStore } from './store/useStore';
 import { createContext, useContext } from 'react';
 
@@ -17,6 +18,7 @@ const NAV_ITEMS = [
   { to: '/money', icon: Wallet, label: 'お金' },
   { to: '/med', icon: Pill, label: 'お薬' },
   { to: '/record', icon: BookHeart, label: 'きろく' },
+  { to: '/review', icon: Star, label: '口コミ' },
 ];
 
 function BottomNav() {
@@ -50,6 +52,7 @@ function Layout() {
         <Route path="/money" element={<MoneyPage />} />
         <Route path="/med" element={<MedPage />} />
         <Route path="/record" element={<RecordPage />} />
+        <Route path="/review" element={<ReviewPage />} />
       </Routes>
       <BottomNav />
     </div>
