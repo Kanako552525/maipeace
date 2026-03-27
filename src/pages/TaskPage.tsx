@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAppStore } from '../App';
-import { Plus, Trash2, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { Plus, Trash2, Play, Pause, RotateCcw, Sparkles, Volume2, VolumeX, Zap } from 'lucide-react';
 import type { Priority } from '../store/useStore';
 import { useSoundEngine, type SoundType } from '../store/useSoundEngine';
 
@@ -58,11 +58,27 @@ export default function TaskPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [running]);
 
-  const resetTimer = () => { setRunning(false); setTimerSec(15 * 60); };
+  const resetTimer = () => { setRunning(false); setTimerSec(15 * 60); setTimerTaskId(null); };
   const mm = String(Math.floor(timerSec / 60)).padStart(2, '0');
   const ss = String(timerSec % 60).padStart(2, '0');
   const timerProgress = 1 - timerSec / (15 * 60);
   const circumference = 2 * Math.PI * 52;
+
+  // 今やるボタン：タイマーをスタートしてタスクを記録
+  const [timerTaskId, setTimerTaskId] = useState<string | null>(null);
+  const timerRef = useRef<HTMLDivElement | null>(null);
+  const startNow = (id: string) => {
+    setTimerTaskId(id);
+    setTimerSec(15 * 60);
+    setRunning(true);
+    timerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // 次にやるタスク（未完了の中で優先度が最も高いもの）
+  const PRIORITY_ORDER: Priority[] = ['high', 'mid', 'low'];
+  const nextTask = todayTasks
+    .filter((t) => !t.done)
+    .sort((a, b) => PRIORITY_ORDER.indexOf(a.priority) - PRIORITY_ORDER.indexOf(b.priority))[0] ?? null;
 
   const handleAdd = () => {
     if (!text.trim()) return;
@@ -80,9 +96,31 @@ export default function TaskPage() {
       <h1 className="text-xl font-bold text-gray-700 mb-1">タスク</h1>
       <p className="text-gray-400 text-xs mb-6">今日やることは3つまで。それだけでOK</p>
 
+      {/* 次にやること（強調カード） */}
+      {nextTask && (
+        <div className="bg-gradient-to-r from-blue-400 to-blue-500 rounded-2xl p-4 mb-5 shadow-sm text-white">
+          <p className="text-xs font-medium opacity-80 mb-1">次にやること</p>
+          <p className="text-base font-bold mb-3 leading-snug">{nextTask.text}</p>
+          <button
+            onClick={() => startNow(nextTask.id)}
+            className="flex items-center gap-2 bg-white text-blue-500 text-sm font-bold px-4 py-2 rounded-full shadow-sm active:scale-95 transition-transform"
+          >
+            <Zap size={15} className="fill-blue-400" />
+            今すぐやる！
+          </button>
+        </div>
+      )}
+
       {/* 15分タイマー */}
-      <div className="bg-white rounded-2xl p-5 mb-5 shadow-sm flex flex-col items-center">
-        <p className="text-sm text-gray-500 mb-4 font-medium">15分だけ集中タイマー</p>
+      <div ref={timerRef} className="bg-white rounded-2xl p-5 mb-5 shadow-sm flex flex-col items-center">
+        {timerTaskId ? (
+          <p className="text-sm font-medium text-blue-400 mb-1 text-center">
+            {todayTasks.find((t) => t.id === timerTaskId)?.text}
+          </p>
+        ) : (
+          <p className="text-sm text-gray-500 mb-4 font-medium">15分だけ集中タイマー</p>
+        )}
+        {timerTaskId && <p className="text-xs text-gray-300 mb-3">に取り組み中…</p>}
         <div className="relative w-32 h-32 mb-4">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
             <circle cx="60" cy="60" r="52" fill="none" stroke="#f0f0f0" strokeWidth="8" />
@@ -222,8 +260,10 @@ export default function TaskPage() {
         ) : (
           <div className="space-y-2">
             {todayTasks.map((t) => (
-              <div key={t.id} className="flex items-center gap-2">
-                <button onClick={() => toggleTask(t.id)} className="flex-1 flex items-center gap-2 py-1 text-left">
+              <div key={t.id} className={`flex items-center gap-2 rounded-xl px-2 py-1 transition-colors ${
+                timerTaskId === t.id ? 'bg-blue-50' : ''
+              }`}>
+                <button onClick={() => toggleTask(t.id)} className="flex-1 flex items-center gap-2 text-left">
                   <span className={`text-sm ${t.done ? 'line-through text-gray-300' : 'text-gray-600'}`}>
                     {t.text}
                   </span>
@@ -231,6 +271,15 @@ export default function TaskPage() {
                     {PRIORITY_LABELS[t.priority]}
                   </span>
                 </button>
+                {!t.done && (
+                  <button
+                    onClick={() => startNow(t.id)}
+                    className="shrink-0 flex items-center gap-1 text-[11px] font-medium text-blue-400 bg-blue-50 px-2 py-1 rounded-lg active:scale-95 transition-transform"
+                  >
+                    <Zap size={11} className="fill-blue-400" />
+                    今やる
+                  </button>
+                )}
                 <button onClick={() => deleteTask(t.id)} className="p-1 text-gray-200 active:text-red-300">
                   <Trash2 size={15} />
                 </button>
